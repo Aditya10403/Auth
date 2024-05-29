@@ -1,13 +1,45 @@
 import React from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 export const SignUp = () => {
+  const [formData, setFormData] = useState({});
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError(false);
+      // can also use axios here
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      setLoading(false);
+      if (data.success === false) {
+        setError(true);
+        return;
+      }
+    } catch (error) {
+      setLoading(false);
+      setError(true);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto mt-10 lg:py-0">
-        <label
-          className="flex items-center mb-6 text-2xl font-bold text-gray-900"
-        >
+        <label className="flex items-center mb-6 text-2xl font-bold text-gray-900">
           Sign Up
         </label>
         <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
@@ -15,7 +47,11 @@ export const SignUp = () => {
             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
               Register
             </h1>
-            <form className="space-y-4 md:space-y-6" action="#">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4 md:space-y-6"
+              action="#"
+            >
               <div>
                 <label
                   htmlFor="username"
@@ -29,6 +65,7 @@ export const SignUp = () => {
                   id="username"
                   className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
                   placeholder=""
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -45,12 +82,13 @@ export const SignUp = () => {
                   id="email"
                   placeholder="name@company.com"
                   className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  onChange={handleChange}
                   required
                 />
               </div>
               <div>
                 <label
-                  htmlFor="confirm-password"
+                  htmlFor="password"
                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                 >
                   Password
@@ -61,14 +99,16 @@ export const SignUp = () => {
                   id="password"
                   placeholder=" • • • • • • • •"
                   className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  onChange={handleChange}
                   required
                 />
               </div>
               <button
+                disabled={loading}
                 type="submit"
                 className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center "
               >
-                Create an account
+                {loading ? "Loading..." : "Create an account"}
               </button>
               <p className="text-sm font-light text-gray-500 dark:text-gray-400">
                 Already have an account?{" "}
@@ -82,6 +122,7 @@ export const SignUp = () => {
             </form>
           </div>
         </div>
+        <p className="text-red-700">{error && "Something went wrong!"}</p>
       </div>
     </>
   );
