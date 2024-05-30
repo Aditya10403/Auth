@@ -1,17 +1,24 @@
 import React, { useEffect } from "react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  signInStart,
+  signInSuccess,
+  signInFailure,
+} from "../redux/user/userSlice";
+import { useDispatch, useSelector } from "react-redux";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 
-
-export default function SignIn()  {
+export default function SignIn() {
   const [formData, setFormData] = useState({});
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { loading, error } = useSelector((state) => state.user);
+
+  const [alerterror, setAlertError] = useState(null);
+  const [alertsuccess, setAlertSuccess] = useState(false);
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -20,8 +27,7 @@ export default function SignIn()  {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
-      // can also use axios here
+      dispatch(signInStart());
       const res = await fetch("/api/auth/signin", {
         method: "POST",
         headers: {
@@ -31,37 +37,37 @@ export default function SignIn()  {
       });
       const data = await res.json();
       if (data.success === false) {
-        setLoading(false);
-        setError(data.message);
+        setAlertError(data.message);
+        dispatch(signInFailure(data));
         return;
       }
-      setLoading(false);
-      setError(null);
-      setSuccess(true);
+      setAlertError(null);
+      setAlertSuccess(true);
+      dispatch(signInSuccess(data));
     } catch (error) {
-      setLoading(false);
-      setError(error.message);
+      setAlertError(error.message);
+      dispatch(signInFailure(error));
     }
   };
 
   useEffect(() => {
-    if (error) {
+    if (alerterror) {
       const timer = setTimeout(() => {
-        setError(null);
+        setAlertError(null);
       }, 4000);
       return () => clearTimeout(timer);
     }
-    if (success) {
+    if (alertsuccess) {
       const timer = setTimeout(() => {
-        setSuccess(false);
+        setAlertSuccess(false);
         navigate("/");
       }, 3200);
       return () => clearTimeout(timer);
     }
-  }, [error, success, setSuccess, setError]);
+  }, [alerterror, alertsuccess, setAlertSuccess, setAlertError]);
   return (
     <>
-    {success && (
+      {alertsuccess && (
         <div className="w-[270px] md:w-[350px] absolute md:left-[1%] md:top-[12%] flex flex-col gap-y-2">
           <Alert severity="success">
             <AlertTitle>Success</AlertTitle>
@@ -69,14 +75,14 @@ export default function SignIn()  {
           </Alert>
         </div>
       )}
-      {error && (
+      {alerterror && (
         <div className="w-[270px] md:w-[350px] absolute md:left-[1%] md:top-[12%] flex flex-col gap-y-2">
-          {error === "User not found!" ? (
+          {alerterror === "User not found!" ? (
             <Alert severity="warning">
               <AlertTitle>Warning</AlertTitle>
               User not found!
             </Alert>
-          ) : error === "Invalid credentials!" ? (
+          ) : alerterror === "Invalid credentials!" ? (
             <Alert severity="info">
               <AlertTitle>Info</AlertTitle>
               Invalid credentials!
@@ -101,7 +107,6 @@ export default function SignIn()  {
             <form
               onSubmit={handleSubmit}
               className="space-y-4 md:space-y-6"
-              action="#"
             >
               <div>
                 <label
@@ -132,6 +137,7 @@ export default function SignIn()  {
                   name="password"
                   id="password"
                   placeholder=" • • • • • • • •"
+                  // minLength={6}
                   className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
                   onChange={handleChange}
                   required
@@ -147,10 +153,10 @@ export default function SignIn()  {
               <p className="text-sm font-light text-gray-500 dark:text-gray-400">
                 Don&#39;t have an account?{" "}
                 <Link
-                  to="/sign-in"
+                  to="/sign-up"
                   className="font-medium text-primary-600 hover:underline"
                 >
-                  SignUp 
+                  SignUp
                 </Link>
               </p>
             </form>
