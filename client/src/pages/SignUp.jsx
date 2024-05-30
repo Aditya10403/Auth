@@ -1,11 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import Alert from "@mui/material/Alert";
+import AlertTitle from "@mui/material/AlertTitle";
 
 export const SignUp = () => {
   const [formData, setFormData] = useState({});
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -15,7 +20,6 @@ export const SignUp = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      setError(false);
       // can also use axios here
       const res = await fetch("/api/auth/signup", {
         method: "POST",
@@ -25,19 +29,67 @@ export const SignUp = () => {
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      setLoading(false);
+      console.log(data.message);
       if (data.success === false) {
-        setError(true);
+        setLoading(false);
+        setError(data.message);
         return;
       }
+      setLoading(false);
+      setError(null);
+      setSuccess(true);
     } catch (error) {
       setLoading(false);
-      setError(true);
+      setError(error.message);
     }
   };
 
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess(false);
+        navigate("/sign-in");
+      }, 3200);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success, setSuccess, setError]);
+
   return (
     <>
+      {success && (
+        <div className="w-[270px] md:w-[350px] absolute md:left-[1%] md:top-[12%] flex flex-col gap-y-2">
+          <Alert severity="success">
+            <AlertTitle>Success</AlertTitle>
+            User Registered successfully!
+          </Alert>
+        </div>
+      )}
+      {error && (
+        <div className="w-[270px] md:w-[350px] absolute md:left-[1%] md:top-[12%] flex flex-col gap-y-2">
+          {error[62] === "u" ? (
+            <Alert severity="info">
+              <AlertTitle>Info</AlertTitle>
+              User already exists!
+            </Alert>
+          ) : error[62] === "e" ? (
+            <Alert severity="info">
+              <AlertTitle>Info</AlertTitle>
+              Email already exists!
+            </Alert>
+          ) : (
+            <Alert severity="warning">
+              <AlertTitle>Warning</AlertTitle>
+              Something went wrong!
+            </Alert>
+          )}
+        </div>
+      )}
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto mt-10 lg:py-0">
         <label className="flex items-center mb-6 text-2xl font-bold text-gray-900">
           Sign Up
@@ -122,7 +174,6 @@ export const SignUp = () => {
             </form>
           </div>
         </div>
-        <p className="text-red-700">{error && "Something went wrong!"}</p>
       </div>
     </>
   );
